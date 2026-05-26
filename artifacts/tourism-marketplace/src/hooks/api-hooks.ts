@@ -17,6 +17,22 @@ export const useCountry = (id: number | string) => useQuery({
   enabled: !!id,
 });
 
+export const useCountryPrograms = (countryId: number | string, params?: Record<string, any>) => useQuery({
+  queryKey: ['countries', countryId, 'programs', params],
+  queryFn: async () => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== -1 && value !== '-1' && value !== '') {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    return (await api.get<ProgramSimple[]>(`/api/countries/${countryId}/programs?${searchParams.toString()}`)).data;
+  },
+  enabled: !!countryId,
+});
+
 // --- PROGRAMS ---
 export const usePrograms = (params?: Record<string, any>) => useQuery({
   queryKey: ['programs', params],
