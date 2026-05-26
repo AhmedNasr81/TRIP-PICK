@@ -66,6 +66,13 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    proxy: {
+      "/api": {
+        target: process.env.VITE_BACKEND_URL || "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   preview: {
     port,
