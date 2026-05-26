@@ -1,0 +1,74 @@
+this a openapi josn doc for a backend apis of a webapp.
+you an experienced front end developer , and your task is to build the front end for this web app.
+
+the tools you will use is (react , axios, framer-motion, js-cookie, lucide-react, next, react, react-dom, react-hot-toast, tailwindcss ).
+
+i want you to create the full pages like (home page , login, signup the admin dashboard,the company dashboard ........etc).
+
+try to increase the usage of all apis in the wep app.
+sometimes makeing a page containing more than one thing is better for some situation like when opening the company page we see some recent reviews + some programs of this company + the data of the cmpany and rate is good to combine some component.
+also we can if it is good to separate component for the company programs to serch or do kind of advanced thing like searching with filter.
+admin page has some details so try to make best of it .
+take care of the photo layout of the programs how to user see them and how the company user edit them and add one (if there is an api for that).
+do not add stuff that is not exsist in the api like google maps or somthing like that 
+dont make vauge wy like this is the whatsapp for that company no, i think use somthing better like contact with the company a clicable link to the whats app and also for the additional contact 
+take advantage of the filters and the searchs that i provide in the backend .
+again try to makimize the usage of apis and try to not decrease the number of pages , if there is a page that make sense add it .
+use simple way to unify the .
+deal well with the token of the jwt and store it well and use it 
+make a page for the 404.
+the back end put way is to get the data first and edit what evet the user need to edit and return the all data and save it it is not using advanced one field editing.
+i dont think we need to make tourists can navigate other tourists profile accounts.
+follow the best user experience user interface desigens.
+do easy way to link the front end with the backend 
+the backend will be on the same maachien (localhost on port 8080) and if there another configeration we will need to set it up consider it in a readme file or somthing 
+photos and images is one of the main componenet of the web app so pay attentoin for them .
+consider
+
+
+
+small discriptio
+Tourism Marketplace — What the App Is
+A platform where tourists discover and explore tour programs offered by travel companies, similar in spirit to a simplified TripAdvisor or Airbnb Experiences.
+
+The Tourist Experience
+When a tourist signs up and logs in, they can:
+Browse & Discover
+Browse a catalog of tour programs from various companies. Each program card shows the name, cover image, country, price, duration, start date, the company offering it, and an average star rating of the company that manage it,  because the program is not having a rate . The listing is fully filterable — by country, price range, duration range, date range, and sortable by price, duration, rating, or newest and other filter stuff exsist in the apis.
+Program Detail Page
+Clicking a program opens a full detail view that includes a main cover image, a gallery of additional photos, a full description, the duration (in days), start date, price, the company name and country it belongs to, and the average rating. There's also a heart/favorite button to save it.
+Favorites
+Tourists can save any program to their favorites list and come back to it later. They can also remove programs from favorites. It's essentially a personal wishlist.
+Reviews
+Tourists can leave a review on a company — a star rating (1–5) and a written comment (up to 1000 characters). They can only review each company once. They can later edit or delete their own review.
+Profile
+Tourists have a profile with their first name, last name, email ...etc, and a profile picture they can upload. They can update their name, change their password, or upload a new photo anytime ....etc.
+
+The Company Experience
+Companies have their own side of the platform:
+Company Profile
+After registering, a company sets up a profile with a name, description, physical address, WhatsApp number (the primary way tourists contact them) .... etc , and an optional additional contact. They can upload a logo/banner image. Their profile is publicly visible with their average rating and total number of reviews.
+Managing Programs
+Companies create and manage their own tour programs. Each program has a name, description, country, price, duration, start date, a main cover image, and a photo gallery (multiple images). They can activate or deactivate a program to control its visibility on the platform. They can edit or delete their programs at any time.
+Reviews
+Companies can see all the reviews tourists have left for them, along with the reviewer's name and photo.
+
+The Admin Experience
+
+Admins have a dashboard and full control over the platform:
+Dashboard Stats
+A stats overview showing total users, tourists, companies, programs, countries, reviews, and favorites across the entire platform.
+User Management
+Admins can browse all users, search and filter by role or active status, view any user's full profile, activate or deactivate any account, or permanently delete a user.Country Management
+Admins manage the list of countries that programs and companies can be tagged with. Each country has a name and a cover image (used as destination cards when tourists browse by country). Admins can add, edit, delete countries, and upload their images.
+Company Oversight
+Admins can see and browse all company profiles on the platform.
+
+Connecting Tourists and Companies
+There's no in-app booking or payment. When a tourist finds a program they like, they contact the company directly via the WhatsApp number on the company profile. The platform is a discovery and trust layer — companies build credibility through their program listings, photos, and review ratings, and tourists use that to decide who to reach out to.
+
+In Short
+Think of it as a tour program directory with a review system and a favorites list. Companies list their trips with photos and details, tourists browse and save what interests them, reviews build trust, and contact happens off-platform via WhatsApp.
+
+
+this file is a small not full discribtion of the web app you will create it miss some stuff so dont fully rely on it , you will read the open api doc and get the full picture
