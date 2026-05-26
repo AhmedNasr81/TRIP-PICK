@@ -122,6 +122,22 @@ export const useCompanies = (params?: Record<string, any>) => useQuery({
   }
 });
 
+export const useCompanyPrograms = (companyId: number | string, params?: Record<string, any>) => useQuery({
+  queryKey: ['companies', companyId, 'programs', params],
+  queryFn: async () => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== -1 && value !== '-1' && value !== '') {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    return (await api.get<ProgramSimple[]>(`/api/companies/${companyId}/programs?${searchParams.toString()}`)).data;
+  },
+  enabled: !!companyId,
+});
+
 export const useCompany = (id: number | string) => useQuery({
   queryKey: ['companies', id],
   queryFn: async () => (await api.get<CompanyOut>(`/api/companies/${id}`)).data,
