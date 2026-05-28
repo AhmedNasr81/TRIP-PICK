@@ -196,7 +196,7 @@ export default function Dashboard() {
   const { data: countries } = useCountries();
 
   useEffect(() => {
-    if (companyError && (companyError as any).response?.status === 404) {
+    if (companyError) {
       setLocation("/company-setup");
     }
   }, [companyError, setLocation]);

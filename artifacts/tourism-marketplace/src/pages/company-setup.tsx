@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useCreateCompanyProfile } from "@/hooks/api-hooks";
+import { useCreateCompanyProfile, useUploadMyCompanyImage } from "@/hooks/api-hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,14 +17,29 @@ export default function CompanySetup() {
     address: ""
   });
   const createProfile = useCreateCompanyProfile();
+  const uploadImage = useUploadMyCompanyImage();
   const [, setLocation] = useLocation();
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createProfile.mutate(formData, {
       onSuccess: () => {
-        toast.success("Company profile created!");
-        setLocation("/dashboard");
+        if (logoFile) {
+          uploadImage.mutate(logoFile, {
+            onSuccess: () => {
+              toast.success("Profile created!");
+              setLocation("/dashboard");
+            },
+            onError: () => {
+              toast.success("Profile created!");
+              setLocation("/dashboard");
+            }
+          });
+        } else {
+          toast.success("Profile created!");
+          setLocation("/dashboard");
+        }
       },
       onError: (err: any) => {
         toast.error(err.response?.data?.detail || "Failed to create profile");
@@ -94,8 +109,18 @@ export default function CompanySetup() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={createProfile.isPending}>
-              {createProfile.isPending ? "Saving..." : "Complete Setup"}
+            <div className="space-y-2">
+              <Label htmlFor="logo">Company Logo (optional)</Label>
+              <Input
+                id="logo"
+                type="file"
+                accept="image/*"
+                onChange={e => setLogoFile(e.target.files?.[0] || null)}
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={createProfile.isPending || uploadImage.isPending}>
+              {createProfile.isPending || uploadImage.isPending ? "Saving..." : "Complete Setup"}
             </Button>
           </form>
         </CardContent>
