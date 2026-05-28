@@ -203,10 +203,52 @@ export const useToggleFavorite = () => {
         return (await api.post(`/api/favorites/${id}`)).data;
       }
     },
-    onSuccess: (_, variables) => {
+    onMutate: async ({ id, isFavorited }) => {
+      await queryClient.cancelQueries({ queryKey: ['favorites'] });
+      await queryClient.cancelQueries({ queryKey: ['programs'] });
+
+      // Remove instantly from favorites list when un-favoriting
+      queryClient.setQueriesData<ProgramSimple[]>(
+        { queryKey: ['favorites'], exact: false },
+        (old) => {
+          if (!old || !Array.isArray(old)) return old;
+          if (isFavorited) return old.filter(p => String(p.id) !== String(id));
+          return old;
+        }
+      );
+
+      // Update is_favorited on every programs-related query (programs list, country programs, company programs)
+      queryClient.setQueriesData<ProgramSimple[]>(
+        {
+          predicate: (query) =>
+            Array.isArray(query.queryKey) &&
+            query.queryKey.some((k) => k === 'programs'),
+        },
+        (old) => {
+          if (!old || !Array.isArray(old)) return old;
+          return old.map((p) =>
+            String(p.id) === String(id) ? { ...p, is_favorited: !isFavorited } : p
+          );
+        }
+      );
+
+      // Update single program detail page
+      queryClient.setQueriesData(
+        { queryKey: ['programs', id] },
+        (old: any) => (old ? { ...old, is_favorited: !isFavorited } : old)
+      );
+
+      return {};
+    },
+    onError: () => {
+      // Rollback by refetching
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
-      queryClient.invalidateQueries({ queryKey: ['programs', variables.id] });
-    }
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
+    onSettled: (_, __, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', id] });
+    },
   });
 };
 

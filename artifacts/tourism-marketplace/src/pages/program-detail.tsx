@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useProgram, useToggleFavorite } from "@/hooks/api-hooks";
 import { useParams, Link } from "wouter";
 import { getImageUrl } from "@/lib/api";
@@ -8,12 +9,16 @@ import { MapPin, Clock, Calendar, Heart, Share2, Phone, Building2 } from "lucide
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ProgramDetail() {
   const { id } = useParams();
   const { data: program, isLoading } = useProgram(id || "");
   const toggleFavorite = useToggleFavorite();
   const { user } = useAuth();
+
+  // Local optimistic state for instant UI feedback
+  const [localFavorited, setLocalFavorited] = useState<boolean | null>(null);
 
   if (isLoading) {
     return (
@@ -36,12 +41,23 @@ export default function ProgramDetail() {
     return <div className="container mx-auto py-20 text-center font-bold text-2xl">Program not found</div>;
   }
 
+  const isFavorited = localFavorited !== null ? localFavorited : (program.is_favorited ?? false);
+
   const handleFavorite = () => {
     if (!user) {
       toast.error("Please log in to save favorites");
       return;
     }
-    toggleFavorite.mutate({ id: program.id, isFavorited: program.is_favorited });
+    if (toggleFavorite.isPending) return;
+    const next = !isFavorited;
+    setLocalFavorited(next);
+    toggleFavorite.mutate(
+      { id: program.id, isFavorited: isFavorited },
+      {
+        onError: () => setLocalFavorited(null),
+        onSuccess: () => setLocalFavorited(null),
+      }
+    );
   };
 
   const heroImage = getImageUrl(program.main_image) || "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920&q=80";
@@ -92,14 +108,25 @@ export default function ProgramDetail() {
               </div>
               
               <div className="flex items-center gap-3">
-                <Button 
-                  size="icon" 
-                  variant="outline" 
-                  className={`rounded-full h-12 w-12 bg-white/10 backdrop-blur-md border-white/30 hover:bg-white/20 text-white ${program.is_favorited ? "text-red-500" : ""}`}
+                <motion.button
                   onClick={handleFavorite}
+                  disabled={toggleFavorite.isPending}
+                  whileTap={{ scale: 0.82 }}
+                  whileHover={{ scale: 1.1 }}
+                  className={`rounded-full h-12 w-12 flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/30 hover:bg-white/20 text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors ${isFavorited ? "text-red-400" : ""}`}
                 >
-                  <Heart className={program.is_favorited ? "fill-current" : ""} />
-                </Button>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={isFavorited ? "filled" : "empty"}
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.5, opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Heart className={isFavorited ? "fill-current" : ""} size={20} />
+                    </motion.div>
+                  </AnimatePresence>
+                </motion.button>
                 <Button size="icon" variant="outline" className="rounded-full h-12 w-12 bg-white/10 backdrop-blur-md border-white/30 hover:bg-white/20 text-white">
                   <Share2 />
                 </Button>
