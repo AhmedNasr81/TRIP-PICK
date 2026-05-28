@@ -85,7 +85,7 @@ export default function AdminCompanies() {
                     <Button
                       variant="ghost" size="icon"
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => handleDelete(c.id)}
+                      onClick={() => handleDelete(c.user_id)}
                       disabled={deleteCompany.isPending}
                       title="Delete company"
                     >
