@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useCompanies } from "@/hooks/api-hooks";
+import { useCompanies, useDeleteAdminUser } from "@/hooks/api-hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
+import toast from "react-hot-toast";
 
 export default function AdminCompanies() {
   const [search, setSearch] = useState("");
@@ -16,6 +17,16 @@ export default function AdminCompanies() {
     page,
     page_size: 50
   });
+
+  const deleteCompany = useDeleteAdminUser();
+
+  const handleDelete = (id: number) => {
+    if (!confirm("Permanently delete this company and all its data?")) return;
+    deleteCompany.mutate(id, {
+      onSuccess: () => toast.success("Company deleted"),
+      onError: () => toast.error("Failed to delete"),
+    });
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -45,13 +56,14 @@ export default function AdminCompanies() {
                 <th className="px-6 py-4 font-medium">Contact</th>
                 <th className="px-6 py-4 font-medium">Joined</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium">Delete</th>
               </tr>
             </thead>
             <tbody className="divide-y border-t">
               {isLoading ? (
-                <tr><td colSpan={6} className="p-8 text-center">Loading...</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center">Loading...</td></tr>
               ) : companies?.length === 0 ? (
-                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No companies found.</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No companies found.</td></tr>
               ) : companies?.map(c => (
                 <tr key={c.id} className="hover:bg-muted/20">
                   <td className="px-6 py-4 font-mono text-xs">{c.id}</td>
@@ -68,6 +80,17 @@ export default function AdminCompanies() {
                         <ExternalLink size={16} className="mr-2" /> View Profile
                       </Button>
                     </Link>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Button
+                      variant="ghost" size="icon"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => handleDelete(c.id)}
+                      disabled={deleteCompany.isPending}
+                      title="Delete company"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}
