@@ -1,20 +1,22 @@
 import { useState } from "react";
-import { useCountries, useCreateCountry, useUploadCountryImage } from "@/hooks/api-hooks";
-import { getImageUrl } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCountries, useCreateCountry, useDeleteCountry } from "@/hooks/api-hooks";
+import api, { getImageUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Plus, Camera } from "lucide-react";
+import { MapPin, Plus, Camera, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function AdminCountries() {
   const { data: countries, isLoading } = useCountries();
   const createCountry = useCreateCountry();
-  const uploadImage = useUploadCountryImage(0); // We'll pass ID directly when calling mutate
-  
+  const deleteCountry = useDeleteCountry();
+  const queryClient = useQueryClient();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCountryName, setNewCountryName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -22,19 +24,27 @@ export default function AdminCountries() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     createCountry.mutate({ name: newCountryName }, {
-      onSuccess: (country) => {
-        if (selectedFile) {
-          uploadImage.mutate(selectedFile, {
-            onSuccess: () => {
-              toast.success("Country and image created!");
-              resetForm();
-            }
-          });
-        } else {
-          toast.success("Country created!");
-          resetForm();
+      onSuccess: async (country) => {
+        if (selectedFile && country?.id) {
+          const formData = new FormData();
+          formData.append('photo', selectedFile);
+          try {
+            await api.post(`/api/admin/countries/${country.id}/image`, formData);
+            queryClient.invalidateQueries({ queryKey: ['countries'] });
+          } catch {}
         }
-      }
+        toast.success("Country created!");
+        resetForm();
+      },
+      onError: () => toast.error("Failed to create country"),
+    });
+  };
+
+  const handleDelete = (id: number, name: string) => {
+    if (!confirm(`Delete "${name}"? All its programs will be deleted too.`)) return;
+    deleteCountry.mutate(id, {
+      onSuccess: () => toast.success("Country deleted"),
+      onError: () => toast.error("Failed to delete"),
     });
   };
 
@@ -119,8 +129,19 @@ export default function AdminCountries() {
               <div className="font-bold flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" /> {country.name}
               </div>
-              <div className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                {country.program_count} tours
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                  {country.program_count} tours
+                </div>
+                <Button
+                  variant="ghost" size="icon"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive h-7 w-7"
+                  onClick={() => handleDelete(country.id, country.name)}
+                  disabled={deleteCountry.isPending}
+                  title="Delete country"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               </div>
             </CardContent>
           </Card>

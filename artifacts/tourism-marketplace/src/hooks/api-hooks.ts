@@ -106,6 +106,15 @@ export const useAddProgramGalleryImage = (id: number | string) => {
   });
 };
 
+export const useDeleteProgramGalleryImage = (programId: number | string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ imageId }: { programId: number, imageId: number }) =>
+      (await api.delete(`/api/programs/${programId}/images/${imageId}`)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['programs', programId] })
+  });
+};
+
 // --- COMPANIES ---
 export const useCompanies = (params?: Record<string, any>) => useQuery({
   queryKey: ['companies', params],
@@ -239,6 +248,15 @@ export const useDeleteReview = () => {
   });
 };
 
+export const useUpdateReview = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reviewId, data }: { reviewId: number, data: { rate: number, comment: string } }) =>
+      (await api.put(`/api/reviews/${reviewId}`, data)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reviews'] })
+  });
+};
+
 // --- ADMIN ---
 export const useAdminStats = () => useQuery({
   queryKey: ['admin', 'stats'],
@@ -272,6 +290,22 @@ export const useCreateCountry = () => {
   return useMutation({
     mutationFn: async (data: { name: string }) => (await api.post<CountryOut>('/api/admin/countries', data)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['countries'] })
+  });
+};
+
+export const useDeleteCountry = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => (await api.delete(`/api/admin/countries/${id}`)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['countries'] })
+  });
+};
+
+export const useDeleteAdminUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => (await api.delete(`/api/admin/users/${id}`)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
   });
 };
 

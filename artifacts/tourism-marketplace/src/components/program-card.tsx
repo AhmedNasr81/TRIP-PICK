@@ -3,8 +3,11 @@ import { ProgramSimple } from "@/lib/types";
 import { getImageUrl } from "@/lib/api";
 import { StarRating } from "./star-rating";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { MapPin, Clock, Calendar } from "lucide-react";
+import { MapPin, Clock, Calendar, Heart } from "lucide-react";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToggleFavorite } from "@/hooks/api-hooks";
+import toast from "react-hot-toast";
 
 interface ProgramCardProps {
   program: ProgramSimple;
@@ -12,6 +15,18 @@ interface ProgramCardProps {
 
 export function ProgramCard({ program }: ProgramCardProps) {
   const image = getImageUrl(program.main_image) || "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80";
+  const { user } = useAuth();
+  const toggleFavorite = useToggleFavorite();
+
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Please log in to save favorites");
+      return;
+    }
+    toggleFavorite.mutate({ id: program.id, isFavorited: program.is_favorited ?? false });
+  };
 
   return (
     <Link href={`/programs/${program.id}`}>
@@ -28,6 +43,15 @@ export function ProgramCard({ program }: ProgramCardProps) {
           <div className="absolute bottom-3 right-3 bg-background/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-sm font-bold text-foreground">
             ${program.price.toLocaleString()}
           </div>
+          <button
+            onClick={handleFavorite}
+            className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm rounded-full p-1.5 shadow transition-transform hover:scale-110"
+            title={program.is_favorited ? "Remove from favorites" : "Save to favorites"}
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${program.is_favorited ? "fill-current text-red-500" : "text-muted-foreground"}`}
+            />
+          </button>
         </div>
         <CardContent className="p-4 flex-grow">
           <div className="flex justify-between items-start mb-2">
@@ -35,12 +59,10 @@ export function ProgramCard({ program }: ProgramCardProps) {
               {program.name}
             </h3>
           </div>
-          
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
             <MapPin size={14} />
             <span className="truncate">{program.company_name}</span>
           </div>
-          
           <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
             {program.description}
           </p>

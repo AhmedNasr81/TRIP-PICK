@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useAdminUsers, useUpdateUserStatus } from "@/hooks/api-hooks";
+import { useAdminUsers, useUpdateUserStatus, useDeleteAdminUser } from "@/hooks/api-hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 
@@ -24,12 +24,21 @@ export default function AdminUsers() {
   });
 
   const updateStatus = useUpdateUserStatus();
+  const deleteUser = useDeleteAdminUser();
 
   const handleToggleStatus = (id: number, currentStatus: boolean) => {
     updateStatus.mutate(
       { id, is_active: !currentStatus },
       { onSuccess: () => toast.success("User status updated") }
     );
+  };
+
+  const handleDelete = (id: number) => {
+    if (!confirm("Permanently delete this user?")) return;
+    deleteUser.mutate(id, {
+      onSuccess: () => toast.success("User deleted"),
+      onError: () => toast.error("Failed to delete"),
+    });
   };
 
   return (
@@ -82,13 +91,14 @@ export default function AdminUsers() {
                 <th className="px-6 py-4 font-medium">Role</th>
                 <th className="px-6 py-4 font-medium">Joined</th>
                 <th className="px-6 py-4 font-medium">Active</th>
+                <th className="px-6 py-4 font-medium">Delete</th>
               </tr>
             </thead>
             <tbody className="divide-y border-t">
               {isLoading ? (
-                <tr><td colSpan={5} className="p-8 text-center">Loading...</td></tr>
+                <tr><td colSpan={6} className="p-8 text-center">Loading...</td></tr>
               ) : users?.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No users found.</td></tr>
+                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No users found.</td></tr>
               ) : users?.map(u => (
                 <tr key={u.id} className="hover:bg-muted/20">
                   <td className="px-6 py-4 font-medium">{u.first_name} {u.last_name}</td>
@@ -101,6 +111,17 @@ export default function AdminUsers() {
                       onCheckedChange={() => handleToggleStatus(u.id, u.is_active)}
                       disabled={updateStatus.isPending || u.role === 'admin'}
                     />
+                  </td>
+                  <td className="px-6 py-4">
+                    <Button
+                      variant="ghost" size="icon"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => handleDelete(u.id)}
+                      disabled={u.role === 'admin' || deleteUser.isPending}
+                      title={u.role === 'admin' ? "Cannot delete admin" : "Delete user"}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}

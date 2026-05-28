@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useCompany, useReviews, useMyReviewId, useCreateReview, useDeleteReview, useCompanyPrograms } from "@/hooks/api-hooks";
+import { useCompany, useReviews, useMyReviewId, useCreateReview, useDeleteReview, useUpdateReview, useCompanyPrograms } from "@/hooks/api-hooks";
 import { useParams, Link } from "wouter";
 import { getImageUrl } from "@/lib/api";
 import { StarRating } from "@/components/star-rating";
@@ -82,8 +82,12 @@ export default function CompanyProfile() {
   const { data: myReviewIdData } = useMyReviewId(id || "");
   const createReview = useCreateReview();
   const deleteReview = useDeleteReview();
+  const updateReview = useUpdateReview();
   const [reviewText, setReviewText] = useState("");
   const [rating, setRating] = useState(5);
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
+  const [editReviewText, setEditReviewText] = useState("");
+  const [editReviewRating, setEditReviewRating] = useState(5);
 
   const handleReviewSubmit = () => {
     if (!reviewText.trim() || !company) return;
@@ -418,13 +422,61 @@ export default function CompanyProfile() {
                         <div className="flex flex-col items-end gap-1">
                           <StarRating rating={review.rate} size={14} />
                           {user?.id === review.user_id && (
-                            <button onClick={() => handleDeleteReview(review.id)} className="text-xs text-destructive hover:underline">
-                              Delete
-                            </button>
+                            <div className="flex gap-2 mt-1">
+                              <button
+                                onClick={() => {
+                                  setEditingReviewId(review.id);
+                                  setEditReviewText(review.comment);
+                                  setEditReviewRating(review.rate);
+                                }}
+                                className="text-xs text-primary hover:underline"
+                              >
+                                Edit
+                              </button>
+                              <button onClick={() => handleDeleteReview(review.id)} className="text-xs text-destructive hover:underline">
+                                Delete
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
-                      <p className="text-sm text-foreground/90 leading-relaxed">{review.comment}</p>
+                      {editingReviewId === review.id ? (
+                        <div className="mt-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Rating:</span>
+                            <div className="flex gap-1">
+                              {[1,2,3,4,5].map(star => (
+                                <button key={star} onClick={() => setEditReviewRating(star)} className="focus:outline-none">
+                                  <StarRating rating={editReviewRating >= star ? 1 : 0} size={20} max={1} />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <textarea
+                            className="w-full border rounded-lg p-2 text-sm resize-none bg-background"
+                            rows={3}
+                            value={editReviewText}
+                            onChange={e => setEditReviewText(e.target.value)}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              disabled={!editReviewText.trim() || updateReview.isPending}
+                              onClick={() => {
+                                updateReview.mutate(
+                                  { reviewId: review.id, data: { rate: editReviewRating, comment: editReviewText } },
+                                  { onSuccess: () => { toast.success("Review updated!"); setEditingReviewId(null); } }
+                                );
+                              }}
+                            >
+                              {updateReview.isPending ? "Saving..." : "Save"}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingReviewId(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-foreground/90 leading-relaxed">{review.comment}</p>
+                      )}
                     </CardContent>
                   </Card>
                 ))

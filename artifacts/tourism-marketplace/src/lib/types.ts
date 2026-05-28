@@ -56,6 +56,7 @@ export interface ProgramSimple {
   company_name: string;
   avg_rating: number;
   created_at: string;
+  is_favorited?: boolean;
 }
 
 export interface ProgramImageOut {

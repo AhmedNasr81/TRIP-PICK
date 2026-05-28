@@ -1,0 +1,138 @@
+I need you to fix and add several missing features in this React tourism marketplace project. Please apply ALL the following changes carefully:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — src/pages/dashboard.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. ADD EDIT PROGRAM BUTTON & MODAL
+- In the programs table, next to the Delete button, add an Edit button (use Edit icon from lucide-react).
+- When clicked, open a Dialog pre-filled with the program's current data (name, description, country_id, price, duration, start_at, is_active).
+- On submit, call useUpdateProgram(program.id) with the updated data.
+- After success, show toast "Program updated successfully" and close the dialog.
+
+2. ADD COVER IMAGE UPLOAD TO CREATE PROGRAM MODAL
+- Add a file input labeled "Cover Image (optional)" inside the Create Program form.
+- Store the selected file in a separate state variable (e.g. programImageFile).
+- After the program is created successfully, if a file was selected, call useUploadProgramImage(newProgram.id) to upload it.
+- useUploadProgramImage already exists in src/hooks/api-hooks.ts.
+
+3. ADD GALLERY MANAGEMENT PER PROGRAM
+- In the programs table, add an "Images" button (use ImageIcon from lucide-react) for each program row.
+- When clicked, open a Dialog that:
+  a. Fetches the full program with useProgram(program.id) to get the images array.
+  b. Shows all current gallery images in a grid, each with a delete (X) button.
+  c. Has an upload button to add a new gallery image.
+- Use useAddProgramGalleryImage(programId) for uploads (already in api-hooks.ts).
+- Add useDeleteProgramGalleryImage to src/hooks/api-hooks.ts:
+    mutationFn: async ({ programId, imageId }: { programId: number, imageId: number }) =>
+      (await api.delete(`/api/programs/${programId}/images/${imageId}`)).data
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['programs', programId] })
+
+4. ADD is_active TOGGLE IN EDIT PROGRAM MODAL
+- Inside the Edit Program modal (from point 1), add a Switch labeled "Active" bound to is_active.
+- Include is_active in the update payload.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — src/pages/register.tsx
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5. FIX POST-REGISTRATION FLOW
+- Add state: const [registered, setRegistered] = useState(false);
+- After api.post("/api/auth/register") succeeds, set registered to true. Do NOT redirect to /login.
+- When registered is true, replace the form with a confirmation card showing:
+    • A Mail icon (from lucide-react) in a rounded circle with bg-primary/10
+    • Title: "Check Your Email"
+    • Description: "We sent a verification link to {formData.email}. Click the link in the email to activate your account."
+    • Small muted text: "Didn't receive it? Check your spam folder."
+    • A button linking to /login: "Go to Login"
+- The verify-email page is already correct — do NOT change it.
+- Add import { Mail } from "lucide-react" at the top.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — Tourist: Reviews & Favorites
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6. ADD useUpdateReview HOOK in src/hooks/api-hooks.ts
+Add this after useDeleteReview:
+    export const useUpdateReview = () => {
+      const queryClient = useQueryClient();
+      return useMutation({
+        mutationFn: async ({ reviewId, data }: { reviewId: number, data: { rate: number, comment: string } }) =>
+          (await api.put(`/api/reviews/${reviewId}`, data)).data,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      });
+    };
+
+7. ADD EDIT REVIEW BUTTON in src/pages/company-profile.tsx
+- On each review card where user?.id === review.user_id, add an "Edit" button next to the "Delete" button.
+- When clicked, show an inline edit form pre-filled with the current rate and comment.
+- On submit, call useUpdateReview() with { reviewId: review.id, data: { rate, comment } }.
+- After success, show toast "Review updated!" and close the edit form.
+- Import useUpdateReview from @/hooks/api-hooks.
+
+8. ADD FAVORITE BUTTON ON PROGRAM CARD in src/components/program-card.tsx
+- Add a Heart button (from lucide-react) overlaid on the top-right corner of the card image.
+- Import useAuth from @/contexts/AuthContext and useToggleFavorite from @/hooks/api-hooks.
+- Clicking the heart calls toggleFavorite.mutate({ id: program.id, isFavorited: program.is_favorited ?? false }).
+- If user is not logged in, show toast "Please log in to save favorites".
+- Heart is filled (fill-current text-red-500) if program.is_favorited is true.
+- Stop click event propagation so the card link doesn't navigate.
+- In src/lib/types.ts, add is_favorited?: boolean to the ProgramSimple interface.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 4 — Admin: Missing Actions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9. ADD useDeleteCountry AND useDeleteUser HOOKS in src/hooks/api-hooks.ts
+
+Add useDeleteCountry after useCreateCountry:
+    export const useDeleteCountry = () => {
+      const queryClient = useQueryClient();
+      return useMutation({
+        mutationFn: async (id: number) => (await api.delete(`/api/admin/countries/${id}`)).data,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['countries'] })
+      });
+    };
+
+Add useDeleteAdminUser after useUpdateUserStatus:
+    export const useDeleteAdminUser = () => {
+      const queryClient = useQueryClient();
+      return useMutation({
+        mutationFn: async (id: number) => (await api.delete(`/api/admin/users/${id}`)).data,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      });
+    };
+
+10. ADD DELETE BUTTON ON EACH COUNTRY CARD in src/pages/admin/countries.tsx
+- Import useDeleteCountry and Trash2 from lucide-react.
+- On each country card, add a small red Trash2 icon button.
+- On click, confirm("Delete this country? All its programs will be deleted too.") then call deleteCountry.mutate(country.id).
+- Show toast "Country deleted" on success.
+
+11. ADD DELETE BUTTON IN USERS TABLE in src/pages/admin/users.tsx
+- Import useDeleteAdminUser and Trash2 from lucide-react.
+- Add a "Delete" column to the table.
+- On click, confirm("Permanently delete this user?") then call deleteUser.mutate(user.id).
+- Disable the button if u.role === 'admin'.
+- Show toast "User deleted" on success.
+
+12. FIX COUNTRY IMAGE UPLOAD BUG in src/pages/admin/countries.tsx
+- Currently useUploadCountryImage(0) is called with id=0 which is wrong.
+- Fix: Remove useUploadCountryImage from the top-level hook calls.
+- Inside handleCreate's onSuccess callback, after getting the new country object, use the api directly:
+    if (selectedFile && country?.id) {
+      const formData = new FormData();
+      formData.append('photo', selectedFile);
+      await api.post(`/api/admin/countries/${country.id}/image`, formData);
+      queryClient.invalidateQueries({ queryKey: ['countries'] });
+    }
+- Import useQueryClient from @tanstack/react-query and api from @/lib/api at the top.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL RULES FOR ALL CHANGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Do not rewrite or restructure any existing working code
+- Use only components and hooks already in the project
+- Maintain the same TypeScript types and code style
+- All dialogs must close after successful actions
+- All async actions must show loading state and toast feedback
