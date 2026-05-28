@@ -217,13 +217,6 @@ export const useReviews = (companyId: number | string, page = 1, pageSize = 20) 
   enabled: !!companyId,
 });
 
-export const useMyReviewId = (companyId: number | string) => useQuery({
-  queryKey: ['reviews', 'me', companyId],
-  queryFn: async () => (await api.get<{ review_id: number }>(`/api/review_id/${companyId}`)).data,
-  enabled: !!companyId,
-  retry: false,
-});
-
 export const useCreateReview = () => {
   const queryClient = useQueryClient();
   return useMutation({

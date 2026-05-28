@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useCompany, useReviews, useMyReviewId, useCreateReview, useDeleteReview, useUpdateReview, useCompanyPrograms } from "@/hooks/api-hooks";
+import { useCompany, useReviews, useCreateReview, useDeleteReview, useUpdateReview, useCompanyPrograms } from "@/hooks/api-hooks";
 import { useParams, Link } from "wouter";
 import { getImageUrl } from "@/lib/api";
 import { StarRating } from "@/components/star-rating";
@@ -79,7 +79,6 @@ export default function CompanyProfile() {
 
   // Reviews state
   const { data: reviews, isLoading: isLoadingReviews } = useReviews(id || "");
-  const { data: myReviewIdData } = useMyReviewId(id || "");
   const createReview = useCreateReview();
   const deleteReview = useDeleteReview();
   const updateReview = useUpdateReview();
@@ -367,7 +366,7 @@ export default function CompanyProfile() {
         <section>
           <h2 className="text-2xl font-bold mb-6">Reviews ({company.rate_count})</h2>
 
-          {user?.role === 'tourist' && !myReviewIdData?.review_id && (
+          {user?.role === 'tourist' && !reviews?.some(r => r.user_id === user?.id) && (
             <Card className="mb-8 border-primary/20 bg-primary/5">
               <CardContent className="pt-6">
                 <h3 className="font-bold mb-4">Leave a review</h3>
