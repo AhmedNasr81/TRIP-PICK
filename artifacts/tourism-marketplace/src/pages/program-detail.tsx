@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useProgram, useToggleFavorite } from "@/hooks/api-hooks";
+import { useProgram, useToggleFavorite, useReviews, useCreateReview } from "@/hooks/api-hooks";
 import { useParams, Link } from "wouter";
 import { getImageUrl } from "@/lib/api";
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Calendar, Heart, Share2, Building2, MessageCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Clock, Calendar, Heart, Share2, Building2, MessageCircle, Star, User } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import toast from "react-hot-toast";
@@ -19,6 +20,32 @@ export default function ProgramDetail() {
 
   // Local optimistic state for instant UI feedback
   const [localFavorited, setLocalFavorited] = useState<boolean | null>(null);
+
+  // Reviews
+  const { data: reviews, isLoading: reviewsLoading } = useReviews(program?.company_id ?? "", 1, 50);
+  const createReview = useCreateReview();
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+
+  const isTourist = user?.role === "tourist";
+
+  const handleSubmitReview = () => {
+    if (!program) return;
+    if (reviewRating === 0) { toast.error("Please select a star rating"); return; }
+    if (!reviewComment.trim()) { toast.error("Please write a comment"); return; }
+    createReview.mutate(
+      { company_id: program.company_id, rate: reviewRating, comment: reviewComment.trim() },
+      {
+        onSuccess: () => {
+          toast.success("Review submitted!");
+          setReviewRating(0);
+          setReviewComment("");
+        },
+        onError: () => toast.error("Failed to submit review"),
+      }
+    );
+  };
 
   if (isLoading) {
     return (
@@ -163,6 +190,131 @@ export default function ProgramDetail() {
                 </div>
               </section>
             )}
+
+            {/* Reviews Section */}
+            <section>
+              <div className="flex items-baseline gap-4 mb-8">
+                <h2 className="text-3xl font-bold">Reviews</h2>
+                {reviews && reviews.length > 0 && (
+                  <span className="text-muted-foreground text-sm font-medium">
+                    {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+
+              {/* Submit form — tourists only */}
+              {user && isTourist && (
+                <div className="bg-card border rounded-2xl p-6 mb-8">
+                  <h3 className="font-semibold text-lg mb-4">Leave a review</h3>
+
+                  {/* Star picker */}
+                  <div className="flex items-center gap-1 mb-4">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        onMouseEnter={() => setReviewHover(star)}
+                        onMouseLeave={() => setReviewHover(0)}
+                        className="focus:outline-none"
+                        aria-label={`Rate ${star} star${star !== 1 ? "s" : ""}`}
+                      >
+                        <Star
+                          size={28}
+                          className={`transition-colors ${
+                            (reviewHover || reviewRating) >= star
+                              ? "text-yellow-400 fill-yellow-400"
+                              : "text-muted-foreground/30"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    {reviewRating > 0 && (
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        {["", "Poor", "Fair", "Good", "Very good", "Excellent"][reviewRating]}
+                      </span>
+                    )}
+                  </div>
+
+                  <Textarea
+                    placeholder="Share your experience with this tour..."
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    rows={4}
+                    className="mb-4 resize-none"
+                  />
+
+                  <Button
+                    onClick={handleSubmitReview}
+                    disabled={createReview.isPending}
+                    className="px-8"
+                  >
+                    {createReview.isPending ? "Submitting…" : "Submit Review"}
+                  </Button>
+                </div>
+              )}
+
+              {/* Not logged in nudge */}
+              {!user && (
+                <div className="bg-muted/50 border border-dashed rounded-2xl p-6 mb-8 text-center text-muted-foreground">
+                  <Link href="/login" className="text-primary font-semibold hover:underline">Sign in</Link> to leave a review.
+                </div>
+              )}
+
+              {/* Review list */}
+              {reviewsLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex gap-4">
+                      <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-1/3" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : reviews && reviews.length > 0 ? (
+                <div className="space-y-6">
+                  {reviews.map((review) => (
+                    <motion.div
+                      key={review.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex gap-4"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        {review.reviewer_image ? (
+                          <img
+                            src={getImageUrl(review.reviewer_image) || ""}
+                            alt=""
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <User size={18} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm">
+                            {review.reviewer_first_name || "Anonymous"}{" "}
+                            {review.reviewer_last_name || ""}
+                          </span>
+                          <StarRating rating={review.rate} size={13} />
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {format(new Date(review.created_at), "MMM d, yyyy")}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-sm leading-relaxed">{review.comment}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">No reviews yet for this company.</p>
+              )}
+            </section>
           </div>
 
           {/* Sidebar */}
