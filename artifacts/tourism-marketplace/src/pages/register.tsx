@@ -68,7 +68,7 @@ export default function Register() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold tracking-tight">Create an account</CardTitle>
-          <CardDescription>Join WanderLust to discover amazing tours or host your own.</CardDescription>
+          <CardDescription>Join TRIP PICK to discover amazing tours or host your own.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
