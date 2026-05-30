@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { usePrograms, useDeleteProgram, useCountries, useCompanies } from "@/hooks/api-hooks";
+import { useAdminPrograms, useAdminDeleteProgram, useCountries, useCompanies } from "@/hooks/api-hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,7 +25,7 @@ export default function AdminPrograms() {
   const { data: countries } = useCountries();
   const { data: companies } = useCompanies();
 
-  const { data: programs, isLoading } = usePrograms({
+  const { data: programs, isLoading } = useAdminPrograms({
     search: debouncedSearch || undefined,
     country_id: countryId === "-1" ? undefined : countryId,
     company_id: companyId === "-1" ? undefined : companyId,
@@ -36,7 +36,7 @@ export default function AdminPrograms() {
     page_size: PAGE_SIZE,
   });
 
-  const deleteProgram = useDeleteProgram();
+  const deleteProgram = useAdminDeleteProgram();
 
   const handleDelete = (id: number, name: string) => {
     if (confirm(`Delete "${name}"? This cannot be undone.`)) {

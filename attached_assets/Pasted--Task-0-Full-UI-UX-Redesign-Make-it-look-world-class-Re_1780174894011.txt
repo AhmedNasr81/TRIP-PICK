@@ -1,0 +1,196 @@
+## Task 0 — Full UI/UX Redesign — Make it look world-class
+
+Redesign the entire project UI to look like a premium, modern travel platform (think Airbnb, Booking.com level quality). Keep all existing functionality — only improve the visuals and experience.
+
+### Design direction
+- **Style:** Clean, modern, airy. Lots of whitespace. High contrast. Professional typography.
+- **Color palette:** Keep the existing primary color but make sure it's used consistently. Use neutral grays for backgrounds, strong blacks for headings, muted tones for secondary text.
+- **Typography:** Use font-weight hierarchy — bold heavy headings, regular body, light captions. Increase heading sizes.
+- **Cards:** Give program cards and company cards a proper shadow, smooth hover animation (slight lift + shadow deepen), rounded corners (16px+), and a clean image aspect ratio (16:9 or 3:2).
+- **Buttons:** Consistent sizing, proper padding, subtle hover states, loading states.
+- **Navbar:** Clean sticky navbar with subtle blur backdrop (`backdrop-blur`), proper logo styling for "TRIP PICK" (bold, maybe with a gradient or accent color on "PICK"), and a well-spaced nav links row.
+- **Hero section** (home page): Full-width hero with a large heading that says **"Discover Your Next Adventure"** and a subheading **"Explore curated tours from trusted travel companies around the world."** with a prominent search bar centered below. Animate the hero on mount using `framer-motion` — heading slides up and fades in first, then subheading, then search bar (staggered). Animate the hero background with a slow subtle floating or parallax effect.
+- **Sections:** Use proper section spacing (py-16 or py-24), section titles with a subtle accent line or badge above them.
+- **Footer:** Structured multi-column footer with logo, links, and copyright.
+- **Forms:** Clean inputs with proper focus rings, labels above inputs, good spacing.
+- **Empty states:** Nice illustrated or icon-based empty states (no data found, no favorites, etc.)
+- **Loading skeletons:** Replace any spinners in lists/grids with skeleton loaders that match the card shape.
+- **Mobile:** Fully responsive — hamburger menu on mobile, stacked layouts, touch-friendly tap targets.
+
+### Specific pages to focus on
+1. **Home** — Hero + featured countries grid + featured programs section
+2. **Programs listing** — Filters sidebar or top filter bar + card grid
+3. **Program detail** — Image gallery, details, booking/contact CTA
+4. **Companies listing** — Company cards with logo, rating, program count
+5. **Company profile** — Cover + logo + info + programs + reviews section
+6. **Favorites** — Clean grid with empty state illustration
+7. **Auth pages** (login, register, forgot password) — Centered card layout, clean form
+8. **Admin dashboard** — Proper sidebar navigation, stat cards with icons, clean tables
+
+---
+
+## Task 1 — Rename the project to "TRIP PICK"
+
+Rebrand the entire project from whatever name is currently used to **TRIP PICK**.
+
+Apply the name everywhere it appears:
+- **Navbar** — the logo/brand text should say "TRIP PICK"
+- **Footer** — update the project name to "TRIP PICK"
+- **Browser tab title** — in `index.html`, change `<title>` to "TRIP PICK"
+- **`package.json`** — change the `"name"` field to `"trip-pick"`
+- **Any other place** the old app name appears (meta tags, page headings, email templates, loading screens, etc.)
+
+---
+
+## Task 1 — Add Dark Mode toggle
+
+Add a proper dark/light mode toggle to the project.
+
+- Add a toggle button in the **Navbar** (sun/moon icon)
+- Use `localStorage` to persist the user's preference across sessions
+- On first visit, respect the system preference via `prefers-color-scheme`
+- The project already uses Tailwind — enable dark mode via the `class` strategy in `tailwind.config.ts` (set `darkMode: 'class'`), then toggle the `dark` class on the `<html>` element
+- Make sure the toggle works correctly with the existing Tailwind dark mode classes already in the project (`dark:bg-...`, `dark:text-...`, etc.)
+- If any page or component has hardcoded light colors that don't adapt, add the appropriate `dark:` variant classes
+
+---
+
+Fix the following 3 bugs in the project:
+
+---
+
+## Bug 1 — Removing a favorite from the Favorites page sends a POST instead of DELETE
+
+In `src/hooks/api-hooks.ts`, the `useToggleFavorite` mutation has an `onSettled` callback that calls `queryClient.invalidateQueries({ queryKey: ['favorites'] })`. This re-fetches the favorites list from the server before the UI has updated, which causes the card to re-render with `is_favorited: true` and then fires a POST (add) instead of DELETE (remove).
+
+**Fix:** Remove the favorites invalidation from `onSettled` — keep it only in `onError` for rollback. The optimistic update in `onMutate` already handles the UI.
+
+Change `onSettled` from:
+```ts
+onSettled: (_, __, { id }) => {
+  queryClient.invalidateQueries({ queryKey: ['favorites'] });
+  queryClient.invalidateQueries({ queryKey: ['programs', id] });
+},
+```
+To:
+```ts
+onSettled: (_, __, { id }) => {
+  queryClient.invalidateQueries({ queryKey: ['programs', id] });
+},
+```
+
+---
+
+## Bug 2 — Email verification fires twice and breaks the token
+
+In `src/pages/verify-email.tsx`, the `useEffect` with an empty dependency array runs twice in development due to React 18 Strict Mode intentionally mounting/unmounting components. This sends two requests to `GET /api/auth/verify-email?token=...`, and the second call fails or invalidates the token, causing the page to show an error even on a valid link.
+
+**Fix:** Add a `useRef` guard so the verification only runs once.
+
+Replace the current `useEffect` with:
+```ts
+const hasVerified = useRef(false);
+
+useEffect(() => {
+  if (hasVerified.current) return;
+  hasVerified.current = true;
+
+  const verify = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    if (!token) {
+      setStatus("error");
+      setMessage("Invalid verification link. Token is missing.");
+      return;
+    }
+
+    try {
+      await api.get(`/api/auth/verify-email?token=${token}`);
+      setStatus("success");
+      setMessage("Your email has been successfully verified!");
+    } catch (error: any) {
+      setStatus("error");
+      setMessage(error.response?.data?.detail || "Failed to verify email. The link may have expired.");
+    }
+  };
+
+  verify();
+}, []);
+```
+Also add `useRef` to the import at the top of the file.
+
+---
+
+## Bug 3 — Admin panel uses public endpoints instead of admin-specific ones
+
+In `src/pages/admin/programs.tsx`, the page uses `usePrograms` (which calls `GET /api/programs`) instead of `GET /api/admin/programs`. The admin endpoint returns ALL programs including inactive ones, while the public endpoint only returns active programs — so inactive programs never show in the admin panel.
+
+Same issue in `src/pages/admin/companies.tsx` — it uses `useCompanies` (public) instead of `GET /api/admin/companies`.
+
+Also, the delete action in the admin programs page uses `useDeleteProgram` which calls `DELETE /api/programs/:id` (company-owner only), instead of `DELETE /api/admin/programs/:id` (can delete any program regardless of owner).
+
+**Fix:**
+
+1. Add these hooks to `src/hooks/api-hooks.ts`:
+```ts
+export const useAdminPrograms = (params?: Record<string, any>) => useQuery({
+  queryKey: ['admin', 'programs', params],
+  queryFn: async () => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '' && value !== -1 && value !== '-1')
+          searchParams.append(key, value.toString());
+      });
+    }
+    return (await api.get<ProgramSimple[]>(`/api/admin/programs?${searchParams.toString()}`)).data;
+  }
+});
+
+export const useAdminCompanies = (params?: Record<string, any>) => useQuery({
+  queryKey: ['admin', 'companies', params],
+  queryFn: async () => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '' && value !== -1 && value !== '-1')
+          searchParams.append(key, value.toString());
+      });
+    }
+    return (await api.get<CompanyOut[]>(`/api/admin/companies?${searchParams.toString()}`)).data;
+  }
+});
+
+export const useAdminDeleteProgram = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number | string) => (await api.delete(`/api/admin/programs/${id}`)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'programs'] })
+  });
+};
+```
+
+2. In `src/pages/admin/programs.tsx`, replace `usePrograms` with `useAdminPrograms` and `useDeleteProgram` with `useAdminDeleteProgram`.
+
+3. In `src/pages/admin/companies.tsx`, replace `useCompanies` with `useAdminCompanies`.
+
+---
+
+## Task 4 — Hero section text and animations
+
+In the home page hero section:
+
+1. **Set the heading text** to exactly: `Discover Your Next Adventure`
+2. **Set the subheading text** to exactly: `Explore curated tours from trusted travel companies around the world.`
+
+3. **Animate the hero content** using `framer-motion` (already installed):
+   - Heading: `opacity 0→1`, `y: 40→0`, duration 0.7s
+   - Subheading: same animation, delay 0.2s after heading
+   - Search bar / CTA button: same animation, delay 0.2s after subheading
+   - Use `staggerChildren` or manual delays — smooth and elegant, not bouncy
+
+4. **Animate the hero background**:
+   - If using an image: add a slow `scale: 1→1.05` Ken Burns effect over 8–10 seconds on mount
+   - If using a gradient: animate it with a slow floating/shifting motion using `framer-motion` `animate` with `repeat: Infinity`
+   - Subtle floating orbs or particles in the background (like the loading screen style) are a nice touch

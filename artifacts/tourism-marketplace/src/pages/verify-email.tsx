@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -8,18 +8,22 @@ import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 export default function VerifyEmail() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Verifying your email address...");
+  const hasVerified = useRef(false);
 
   useEffect(() => {
+    if (hasVerified.current) return;
+    hasVerified.current = true;
+
     const verify = async () => {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");
-      
+
       if (!token) {
         setStatus("error");
         setMessage("Invalid verification link. Token is missing.");
         return;
       }
-      
+
       try {
         await api.get(`/api/auth/verify-email?token=${token}`);
         setStatus("success");
@@ -29,7 +33,7 @@ export default function VerifyEmail() {
         setMessage(error.response?.data?.detail || "Failed to verify email. The link may have expired.");
       }
     };
-    
+
     verify();
   }, []);
 

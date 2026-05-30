@@ -8,6 +8,7 @@ import { getImageUrl } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Compass, ArrowRight, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -30,7 +31,13 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       {/* Hero */}
       <section className="relative h-[88vh] min-h-[580px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
+        {/* Background image with Ken Burns */}
+        <motion.div
+          className="absolute inset-0 z-0"
+          initial={{ scale: 1 }}
+          animate={{ scale: 1.06 }}
+          transition={{ duration: 10, ease: "easeOut" }}
+        >
           <img
             src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920&q=80"
             alt="Travel"
@@ -38,18 +45,47 @@ export default function Home() {
           />
           <div className="absolute inset-0 bg-black/45" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-        </div>
+        </motion.div>
+
+        {/* Floating orbs */}
+        <motion.div
+          className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none z-0"
+          animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-1/3 right-1/6 w-48 h-48 rounded-full bg-white/5 blur-3xl pointer-events-none z-0"
+          animate={{ y: [0, 20, 0], x: [0, -15, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        />
 
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-5 text-white drop-shadow-lg">
+          <motion.h1
+            className="text-5xl md:text-7xl font-bold tracking-tight mb-5 text-white drop-shadow-lg"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+          >
             Discover Your Next<br className="hidden md:block" /> Adventure
-          </h1>
-          <p className="text-xl md:text-2xl mb-10 max-w-2xl mx-auto font-medium text-white/90 drop-shadow">
+          </motion.h1>
+
+          <motion.p
+            className="text-xl md:text-2xl mb-10 max-w-2xl mx-auto font-medium text-white/90 drop-shadow"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
+          >
             Explore curated tours from trusted travel companies around the world.
-          </p>
+          </motion.p>
 
           {/* Hero search bar */}
-          <form onSubmit={handleHeroSearch} className="flex items-center gap-0 max-w-2xl mx-auto mb-8 shadow-2xl rounded-full overflow-hidden">
+          <motion.form
+            onSubmit={handleHeroSearch}
+            className="flex items-center gap-0 max-w-2xl mx-auto mb-8 shadow-2xl rounded-full overflow-hidden"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut", delay: 0.4 }}
+          >
             <div className="relative flex-1">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <Input
@@ -68,9 +104,14 @@ export default function Home() {
             >
               Search
             </Button>
-          </form>
+          </motion.form>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <motion.div
+            className="flex flex-col sm:flex-row items-center justify-center gap-3"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut", delay: 0.6 }}
+          >
             <Link href="/programs">
               <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-sm border-white/30 hover:bg-white/20 text-white rounded-full px-8">
                 <Compass className="mr-2 h-5 w-5" /> Browse All Tours
@@ -83,7 +124,7 @@ export default function Home() {
                 </Button>
               </Link>
             )}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -114,6 +155,9 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-end mb-10">
             <div>
+              <span className="inline-block text-xs font-semibold uppercase tracking-widest text-primary mb-2 px-3 py-1 rounded-full bg-primary/10">
+                Destinations
+              </span>
               <h2 className="text-3xl font-bold mb-2">Featured Destinations</h2>
               <p className="text-muted-foreground">Discover tours in our most popular countries</p>
             </div>
@@ -126,10 +170,10 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {isLoadingCountries
-              ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)
+              ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 rounded-2xl" />)
               : countries?.slice(0, 8).map(country => (
                   <Link key={country.id} href={`/countries/${country.id}`}>
-                    <div className="group relative h-64 rounded-xl overflow-hidden cursor-pointer" data-testid={`card-country-${country.id}`}>
+                    <div className="group relative h-64 rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300" data-testid={`card-country-${country.id}`}>
                       <img
                         src={getImageUrl(country.image) || `https://images.unsplash.com/photo-1528181304800-259b08848526?w=600&q=80`}
                         alt={country.name}
@@ -154,6 +198,9 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-end mb-10">
             <div>
+              <span className="inline-block text-xs font-semibold uppercase tracking-widest text-primary mb-2 px-3 py-1 rounded-full bg-primary/10">
+                Latest
+              </span>
               <h2 className="text-3xl font-bold mb-2">Latest Adventures</h2>
               <p className="text-muted-foreground">Recently added tours from our partners</p>
             </div>
@@ -166,7 +213,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {isLoadingPrograms
-              ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[400px] rounded-xl" />)
+              ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[400px] rounded-2xl" />)
               : programs?.map(program => <ProgramCard key={program.id} program={program} />)
             }
           </div>

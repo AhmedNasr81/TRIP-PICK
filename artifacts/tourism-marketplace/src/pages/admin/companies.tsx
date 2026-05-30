@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCompanies, useDeleteAdminUser } from "@/hooks/api-hooks";
+import { useAdminCompanies, useDeleteAdminUser } from "@/hooks/api-hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -12,7 +12,7 @@ export default function AdminCompanies() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data: companies, isLoading } = useCompanies({
+  const { data: companies, isLoading } = useAdminCompanies({
     keyword: search,
     page,
     page_size: 50
@@ -98,7 +98,7 @@ export default function AdminCompanies() {
           </table>
         </div>
       </Card>
-      
+
       <div className="flex justify-between items-center mt-6">
         <Button variant="outline" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Previous</Button>
         <span className="text-sm">Page {page}</span>

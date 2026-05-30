@@ -10,14 +10,36 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getImageUrl } from "@/lib/api";
-import { Map, Menu, User as UserIcon, LogOut, Heart, LayoutDashboard, Settings } from "lucide-react";
+import { Plane, Menu, User as UserIcon, LogOut, Heart, LayoutDashboard, Settings, Sun, Moon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+function useDarkMode() {
+  const [isDark, setIsDark] = useState(() => {
+    const stored = localStorage.getItem("theme");
+    if (stored) return stored === "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDark]);
+
+  return [isDark, setIsDark] as const;
+}
 
 export function Navbar() {
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [isDark, setIsDark] = useDarkMode();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -35,16 +57,16 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-primary font-bold text-xl tracking-tight">
-          <Map className="w-6 h-6" />
-          <span>WanderLust</span>
+        <Link href="/" className="flex items-center gap-2 font-black text-xl tracking-tight">
+          <Plane className="w-5 h-5 text-primary" />
+          <span className="text-foreground">TRIP</span><span className="text-primary">PICK</span>
         </Link>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
-            <Link 
-              key={link.href} 
+            <Link
+              key={link.href}
               href={link.href}
               className={`text-sm font-medium transition-colors hover:text-primary ${
                 location === link.href ? "text-primary" : "text-muted-foreground"
@@ -56,7 +78,18 @@ export function Navbar() {
         </nav>
 
         {/* Desktop Auth/Profile */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-3">
+          {/* Dark mode toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-muted-foreground hover:text-foreground"
+            onClick={() => setIsDark(d => !d)}
+            aria-label="Toggle dark mode"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
           {!user ? (
             <>
               <Link href="/login">
@@ -88,7 +121,7 @@ export function Navbar() {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                
+
                 {user.role === 'admin' && (
                   <Link href="/admin">
                     <DropdownMenuItem className="cursor-pointer">
@@ -97,7 +130,7 @@ export function Navbar() {
                     </DropdownMenuItem>
                   </Link>
                 )}
-                
+
                 {user.role === 'company' && (
                   <Link href="/dashboard">
                     <DropdownMenuItem className="cursor-pointer">
@@ -106,7 +139,7 @@ export function Navbar() {
                     </DropdownMenuItem>
                   </Link>
                 )}
-                
+
                 {user.role === 'tourist' && (
                   <>
                     <Link href="/favorites">
@@ -123,7 +156,7 @@ export function Navbar() {
                     </Link>
                   </>
                 )}
-                
+
                 {(user.role === 'admin' || user.role === 'company') && (
                   <Link href="/profile">
                     <DropdownMenuItem className="cursor-pointer">
@@ -144,7 +177,16 @@ export function Navbar() {
         </div>
 
         {/* Mobile Menu */}
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-muted-foreground"
+            onClick={() => setIsDark(d => !d)}
+            aria-label="Toggle dark mode"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="-mr-2">
@@ -154,10 +196,14 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[350px]">
               <div className="flex flex-col h-full mt-6">
+                <Link href="/" onClick={closeMenu} className="flex items-center gap-2 font-black text-xl tracking-tight mb-6">
+                  <Plane className="w-5 h-5 text-primary" />
+                  <span className="text-foreground">TRIP</span><span className="text-primary">PICK</span>
+                </Link>
                 <nav className="flex flex-col gap-4">
                   {navLinks.map((link) => (
-                    <Link 
-                      key={link.href} 
+                    <Link
+                      key={link.href}
                       href={link.href}
                       onClick={closeMenu}
                       className={`text-lg font-medium transition-colors hover:text-primary ${
@@ -168,7 +214,7 @@ export function Navbar() {
                     </Link>
                   ))}
                 </nav>
-                
+
                 <div className="mt-auto border-t pt-6 pb-6">
                   {!user ? (
                     <div className="flex flex-col gap-3">
@@ -193,7 +239,7 @@ export function Navbar() {
                           <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
                         </div>
                       </div>
-                      
+
                       <div className="flex flex-col gap-2">
                         {user.role === 'admin' && (
                           <Link href="/admin" onClick={closeMenu} className="flex items-center py-2 text-sm text-muted-foreground hover:text-foreground">

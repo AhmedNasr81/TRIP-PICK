@@ -246,7 +246,6 @@ export const useToggleFavorite = () => {
       queryClient.invalidateQueries({ queryKey: ['programs'] });
     },
     onSettled: (_, __, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['favorites'] });
       queryClient.invalidateQueries({ queryKey: ['programs', id] });
     },
   });
@@ -341,6 +340,42 @@ export const useDeleteAdminUser = () => {
   return useMutation({
     mutationFn: async (id: number) => (await api.delete(`/api/admin/users/${id}`)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+  });
+};
+
+export const useAdminPrograms = (params?: Record<string, any>) => useQuery({
+  queryKey: ['admin', 'programs', params],
+  queryFn: async () => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '' && value !== -1 && value !== '-1')
+          searchParams.append(key, value.toString());
+      });
+    }
+    return (await api.get<ProgramSimple[]>(`/api/admin/programs?${searchParams.toString()}`)).data;
+  }
+});
+
+export const useAdminCompanies = (params?: Record<string, any>) => useQuery({
+  queryKey: ['admin', 'companies', params],
+  queryFn: async () => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '' && value !== -1 && value !== '-1')
+          searchParams.append(key, value.toString());
+      });
+    }
+    return (await api.get<CompanyOut[]>(`/api/admin/companies?${searchParams.toString()}`)).data;
+  }
+});
+
+export const useAdminDeleteProgram = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number | string) => (await api.delete(`/api/admin/programs/${id}`)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'programs'] })
   });
 };
 
