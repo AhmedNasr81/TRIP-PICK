@@ -5,7 +5,7 @@ import { getImageUrl } from "@/lib/api";
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, Calendar, Heart, Share2, Phone, Building2 } from "lucide-react";
+import { Clock, Calendar, Heart, Share2, Building2, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import toast from "react-hot-toast";
@@ -176,9 +176,19 @@ export default function ProgramDetail() {
                   </div>
                 </div>
                 
-                <Button className="w-full h-14 text-lg rounded-xl mb-4" size="lg">
-                  Book Now
-                </Button>
+                {program.company_whatsapp && (
+                  <a
+                    href={`https://wa.me/${program.company_whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi, I'm interested in booking: ${program.name}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block mb-4"
+                  >
+                    <Button className="w-full h-14 text-lg rounded-xl bg-green-500 hover:bg-green-600 text-white gap-2" size="lg">
+                      <MessageCircle size={22} />
+                      Book via WhatsApp
+                    </Button>
+                  </a>
+                )}
                 
                 <p className="text-center text-sm text-muted-foreground">
                   You won't be charged yet

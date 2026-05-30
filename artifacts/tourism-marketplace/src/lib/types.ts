@@ -76,6 +76,7 @@ export interface ProgramDetail extends ProgramSimple {
   avg_rating: number;
   is_favorited: boolean;
   images: ProgramImageOut[];
+  company_whatsapp?: string | null;
 }
 
 export interface ReviewOut {
