@@ -75,6 +75,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@tailwindcss/oxide": "^4.3.0",
     "axios": "^1.16.1",
     "js-cookie": "^3.0.7",
     "react-hot-toast": "^2.6.0"
