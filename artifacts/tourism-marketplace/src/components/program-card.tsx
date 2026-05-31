@@ -36,13 +36,12 @@ export function ProgramCard({ program }: ProgramCardProps) {
     const next = !isFavorited;
     setLocalFavorited(next);
 
-    toggleFavorite.mutate(
-      { id: program.id, isFavorited: isFavorited },
-      {
-        onError: () => setLocalFavorited(null),
-        onSuccess: () => setLocalFavorited(null),
-      }
-    );
+   toggleFavorite.mutate(
+  { id: program.id, isFavorited: isFavorited },
+  {
+    onError: () => setLocalFavorited(null),
+  }
+);  
   };
 
   return (
