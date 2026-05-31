@@ -240,8 +240,10 @@ export const useToggleFavorite = () => {
 
       return {};
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    },
     onError: () => {
-      // Rollback by refetching
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
       queryClient.invalidateQueries({ queryKey: ['programs'] });
     },
@@ -378,6 +380,13 @@ export const useAdminDeleteProgram = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'programs'] })
   });
 };
+
+export const useMyReviewId = (companyId: number | string) => useQuery({
+  queryKey: ['reviews', 'me', companyId],
+  queryFn: async () => (await api.get<{ review_id: number }>(`/api/review_id/${companyId}`)).data,
+  enabled: !!companyId,
+  retry: false,
+});
 
 export const useUploadCountryImage = (id: number | string) => {
   const queryClient = useQueryClient();

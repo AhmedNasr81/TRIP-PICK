@@ -29,7 +29,7 @@ export default function AdminPrograms() {
     search: debouncedSearch || undefined,
     country_id: countryId === "-1" ? undefined : countryId,
     company_id: companyId === "-1" ? undefined : companyId,
-    is_active: isActive,
+    is_active: isActive === "-1" ? undefined : isActive === "1" ? "true" : "false",
     sort_by: sortBy,
     order,
     page,

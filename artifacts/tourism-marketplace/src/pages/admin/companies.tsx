@@ -13,7 +13,7 @@ export default function AdminCompanies() {
   const [page, setPage] = useState(1);
 
   const { data: companies, isLoading } = useAdminCompanies({
-    keyword: search,
+    search,
     page,
     page_size: 50
   });

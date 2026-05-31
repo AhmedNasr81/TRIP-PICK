@@ -23,7 +23,17 @@ export default function Login() {
       const res = await api.post("/api/auth/login", { email, password });
       await login(res.data.access_token);
       toast.success("Successfully logged in!");
-      setLocation("/");
+
+      if (res.data.role === "company") {
+        const company = await api.get("/api/companies/me").catch(() => null);
+        if (!company) {
+          setLocation("/company-setup");
+        } else {
+          setLocation("/");
+        }
+      } else {
+        setLocation("/");
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "Failed to log in");
     } finally {

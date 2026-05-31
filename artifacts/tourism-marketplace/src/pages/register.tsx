@@ -15,6 +15,7 @@ export default function Register() {
     last_name: "",
     email: "",
     password: "",
+    confirm_password: "",
     role: "tourist"
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -30,9 +31,18 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.password !== formData.confirm_password) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (formData.password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
     setIsLoading(true);
     try {
-      await api.post("/api/auth/register", formData);
+      const { confirm_password, ...registerData } = formData;
+      await api.post("/api/auth/register", registerData);
       setRegistered(true);
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "Failed to register");
@@ -89,6 +99,16 @@ export default function Register() {
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" required value={formData.password} onChange={handleChange} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm_password">Confirm Password</Label>
+              <Input
+                id="confirm_password"
+                type="password"
+                required
+                value={formData.confirm_password}
+                onChange={handleChange}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">I want to...</Label>

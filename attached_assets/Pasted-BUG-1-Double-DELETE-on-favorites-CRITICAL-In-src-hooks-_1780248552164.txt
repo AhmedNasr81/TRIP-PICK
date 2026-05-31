@@ -1,0 +1,274 @@
+BUG 1 — Double DELETE on favorites (CRITICAL)
+In src/hooks/api-hooks.ts, replace the entire useToggleFavorite hook with:
+tsexport const useToggleFavorite = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, isFavorited }: { id: number | string, isFavorited: boolean }) => {
+      if (isFavorited) {
+        return (await api.delete(`/api/favorites/${id}`)).data;
+      } else {
+        return (await api.post(`/api/favorites/${id}`)).data;
+      }
+    },
+    onMutate: async ({ id, isFavorited }) => {
+      await queryClient.cancelQueries({ queryKey: ['favorites'] });
+      await queryClient.cancelQueries({ queryKey: ['programs'] });
+      queryClient.setQueriesData<ProgramSimple[]>(
+        { queryKey: ['favorites'], exact: false },
+        (old) => {
+          if (!old || !Array.isArray(old)) return old;
+          if (isFavorited) return old.filter(p => String(p.id) !== String(id));
+          return old;
+        }
+      );
+      queryClient.setQueriesData<ProgramSimple[]>(
+        {
+          predicate: (query) =>
+            Array.isArray(query.queryKey) &&
+            query.queryKey.some((k) => k === 'programs'),
+        },
+        (old) => {
+          if (!old || !Array.isArray(old)) return old;
+          return old.map((p) =>
+            String(p.id) === String(id) ? { ...p, is_favorited: !isFavorited } : p
+          );
+        }
+      );
+      queryClient.setQueriesData(
+        { queryKey: ['programs', id] },
+        (old: any) => (old ? { ...old, is_favorited: !isFavorited } : old)
+      );
+      return {};
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
+    onSettled: (_, __, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['programs', id] });
+    },
+  });
+};
+
+BUG 2 — Admin Programs page uses wrong API endpoint
+In src/hooks/api-hooks.ts, add these two hooks:
+tsexport const useAdminPrograms = (params?: Record<string, any>) => useQuery({
+  queryKey: ['admin', 'programs', params],
+  queryFn: async () => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '' && value !== -1 && value !== '-1') {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    return (await api.get<ProgramSimple[]>(`/api/admin/programs?${searchParams.toString()}`)).data;
+  }
+});
+
+export const useAdminDeleteProgram = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number | string) => (await api.delete(`/api/admin/programs/${id}`)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'programs'] });
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+    }
+  });
+};
+In src/pages/admin/programs.tsx:
+ts// Change import from:
+import { usePrograms, useDeleteProgram, useCountries, useCompanies } from "@/hooks/api-hooks";
+// To:
+import { useAdminPrograms, useAdminDeleteProgram, useCountries, useCompanies } from "@/hooks/api-hooks";
+
+// Change query from:
+const { data: programs, isLoading } = usePrograms({ ... });
+// To:
+const { data: programs, isLoading } = useAdminPrograms({ ... });
+
+// Change mutation from:
+const deleteProgram = useDeleteProgram();
+// To:
+const deleteProgram = useAdminDeleteProgram();
+
+BUG 3 — Admin Companies page uses wrong hook
+In src/hooks/api-hooks.ts, add:
+tsexport const useAdminCompanies = (params?: Record<string, any>) => useQuery({
+  queryKey: ['admin', 'companies', params],
+  queryFn: async () => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    return (await api.get<CompanyOut[]>(`/api/admin/companies?${searchParams.toString()}`)).data;
+  }
+});
+In src/pages/admin/companies.tsx:
+ts// Change from:
+import { useCompanies, useDeleteAdminUser } from "@/hooks/api-hooks";
+const { data: companies, isLoading } = useCompanies({ keyword: search, page, page_size: 50 });
+// To:
+import { useAdminCompanies, useDeleteAdminUser } from "@/hooks/api-hooks";
+const { data: companies, isLoading } = useAdminCompanies({ search, page, page_size: 50 });
+
+BUG 4 — Missing useMyReviewId hook
+In src/hooks/api-hooks.ts, add:
+tsexport const useMyReviewId = (companyId: number | string) => useQuery({
+  queryKey: ['reviews', 'me', companyId],
+  queryFn: async () => (await api.get<{ review_id: number }>(`/api/review_id/${companyId}`)).data,
+  enabled: !!companyId,
+  retry: false,
+});
+
+BUG 7 — Login redirect is wrong for company users
+In src/pages/login.tsx, replace the login handler:
+ts// Change from:
+const res = await api.post("/api/auth/login", { email, password });
+await login(res.data.access_token);
+toast.success("Successfully logged in!");
+setLocation("/");
+
+// To:
+const res = await api.post("/api/auth/login", { email, password });
+await login(res.data.access_token);
+toast.success("Successfully logged in!");
+
+if (res.data.role === "company") {
+  const company = await api.get("/api/companies/me").catch(() => null);
+  if (!company) {
+    setLocation("/company-setup");
+  } else {
+    setLocation("/");
+  }
+} else {
+  setLocation("/");
+}
+
+BUG 8 — Register missing confirm password
+In src/pages/register.tsx:
+
+Add confirm_password to form state:
+
+ts// Change from:
+const [formData, setFormData] = useState({
+  first_name: "", last_name: "", email: "", password: "", role: "tourist"
+});
+// To:
+const [formData, setFormData] = useState({
+  first_name: "", last_name: "", email: "", password: "", confirm_password: "", role: "tourist"
+});
+
+Add validation before setIsLoading(true):
+
+tsif (formData.password !== formData.confirm_password) {
+  toast.error("Passwords do not match");
+  return;
+}
+if (formData.password.length < 8) {
+  toast.error("Password must be at least 8 characters");
+  return;
+}
+
+Add the confirm password input after the password field:
+
+tsx<div className="space-y-2">
+  <Label htmlFor="confirm_password">Confirm Password</Label>
+  <Input
+    id="confirm_password"
+    type="password"
+    required
+    value={formData.confirm_password}
+    onChange={handleChange}
+  />
+</div>
+
+Remove confirm_password before sending to API:
+
+ts// Change from:
+await api.post("/api/auth/register", formData);
+// To:
+const { confirm_password, ...registerData } = formData;
+await api.post("/api/auth/register", registerData);
+
+MISSING FEATURE 1 — Program detail has no Reviews section
+In src/pages/program-detail.tsx, add this component above the ProgramDetail function:
+tsxfunction CompanyReviewsPreview({ companyId, companyName }: { companyId: number, companyName: string }) {
+  const { data: reviews, isLoading } = useReviews(companyId, 1, 5);
+  if (isLoading || !reviews || reviews.length === 0) return null;
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-3xl font-bold">Reviews for {companyName}</h2>
+        <Link href={`/companies/${companyId}`}>
+          <Button variant="outline" size="sm">See all reviews</Button>
+        </Link>
+      </div>
+      <div className="space-y-4">
+        {reviews.slice(0, 3).map(review => (
+          <div key={review.id} className="bg-card border rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <Avatar className="w-9 h-9">
+                <AvatarImage src={getImageUrl(review.reviewer_image) || undefined} />
+                <AvatarFallback>{review.reviewer_first_name?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-semibold text-sm">{review.reviewer_first_name} {review.reviewer_last_name}</div>
+                <div className="text-xs text-muted-foreground">{format(new Date(review.created_at), "MMM d, yyyy")}</div>
+              </div>
+              <StarRating rating={review.rate} size={14} className="ml-auto" />
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{review.comment}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+Then inside ProgramDetail, after the Gallery section:
+tsx{program.company_id && (
+  <CompanyReviewsPreview companyId={program.company_id} companyName={program.company_name} />
+)}
+Also add these imports at the top of the file if not already there:
+tsimport { useReviews } from "@/hooks/api-hooks";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+MISSING FEATURE 2 — Favorites pagination
+In src/pages/favorites.tsx:
+tsx// Change from:
+const { data: favorites, isLoading } = useFavorites();
+
+// To:
+const [page, setPage] = useState(1);
+const PAGE_SIZE = 20;
+const { data: favorites, isLoading } = useFavorites(page, PAGE_SIZE);
+Add below the grid:
+tsxconst hasPrev = page > 1;
+const hasNext = favorites && favorites.length === PAGE_SIZE;
+
+{(hasPrev || hasNext) && (
+  <div className="flex items-center justify-center gap-4 mt-10">
+    <Button variant="outline" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={!hasPrev}>
+      Previous
+    </Button>
+    <span className="text-sm font-medium px-3 py-1.5 bg-muted rounded-md">Page {page}</span>
+    <Button variant="outline" onClick={() => setPage(p => p + 1)} disabled={!hasNext}>
+      Next
+    </Button>
+  </div>
+)}
+
+MISSING FEATURE 3 — Admin Programs is_active filter sends wrong values
+In src/pages/admin/programs.tsx, when building params change:
+ts// From:
+is_active: isActive,
+// To:
+is_active: isActive === "-1" ? undefined : isActive === "1" ? "true" : "false",
