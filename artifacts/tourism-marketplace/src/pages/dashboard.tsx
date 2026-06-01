@@ -93,7 +93,7 @@ function EditProgramModal({
 }: {
   program: any, open: boolean, onClose: () => void, countries: any[]
 }) {
-  const updateProgram = useUpdateProgram(program?.id);
+  const updateProgram = useUpdateProgram();
   const [data, setData] = useState({
     name: "", description: "", country_id: "", price: "", duration: "", start_at: "", is_active: true
   });
@@ -113,24 +113,28 @@ function EditProgramModal({
   }, [program]);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateProgram.mutate({
+  e.preventDefault();
+  updateProgram.mutate({
+    id: program.id,
+    data: {
       ...data,
       country_id: parseInt(data.country_id),
-      price: parseInt(data.price),
+      price: parseFloat(data.price),
       duration: parseInt(data.duration),
-    }, {
-      onSuccess: () => {
-        toast.success("Program updated successfully");
-        onClose();
-      },
-      onError: () => toast.error("Update failed"),
-    });
-  };
+      start_at: data.start_at ? new Date(data.start_at).toISOString() : null,
+    }
+  }, {
+    onSuccess: () => {
+      toast.success("Program updated successfully");
+      onClose();
+    },
+    onError: () => toast.error("Update failed"),
+  });
+};
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+         <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Program</DialogTitle>
         </DialogHeader>
@@ -151,13 +155,13 @@ function EditProgramModal({
             </div>
             <div className="space-y-2">
               <Label>Price (USD)</Label>
-              <Input type="number" required value={data.price} onChange={e => setData(d => ({ ...d, price: e.target.value }))} />
+            <Input type="number" required min={0} value={data.price} onChange={e => setData(d => ({ ...d, price: e.target.value }))} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Duration (Days)</Label>
-              <Input type="number" required value={data.duration} onChange={e => setData(d => ({ ...d, duration: e.target.value }))} />
+               <Input type="number" required min={1} value={data.duration} onChange={e => setData(d => ({ ...d, duration: e.target.value }))} />
             </div>
             <div className="space-y-2">
               <Label>Start Date (Optional)</Label>
@@ -183,7 +187,6 @@ function EditProgramModal({
     </Dialog>
   );
 }
-
 // --- Main Dashboard ---
 export default function Dashboard() {
   const { user } = useAuth();

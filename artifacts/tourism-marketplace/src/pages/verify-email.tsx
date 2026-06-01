@@ -28,6 +28,7 @@ export default function VerifyEmail() {
         await api.get(`/api/auth/verify-email?token=${token}`);
         setStatus("success");
         setMessage("Your email has been successfully verified!");
+
       } catch (error: any) {
         setStatus("error");
         setMessage(error.response?.data?.detail || "Failed to verify email. The link may have expired.");

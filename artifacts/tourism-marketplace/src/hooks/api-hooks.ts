@@ -63,11 +63,12 @@ export const useCreateProgram = () => {
   });
 };
 
-export const useUpdateProgram = (id: number | string) => {
+export const useUpdateProgram = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => (await api.put<ProgramDetail>(`/api/programs/${id}`, data)).data,
-    onSuccess: () => {
+    mutationFn: async ({ id, data }: { id: number, data: any }) => 
+      (await api.put<ProgramDetail>(`/api/programs/${id}`, data)).data,
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['programs'] });
       queryClient.invalidateQueries({ queryKey: ['programs', id] });
     }
